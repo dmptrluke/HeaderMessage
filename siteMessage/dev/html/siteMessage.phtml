@@ -1,0 +1,23 @@
+<ips:template parameters="" />
+
+{{if settings.siteMessage_content and (settings.siteMessage_groups == '*' or member.inGroup(explode(',', settings.siteMessage_groups))) and !(settings.siteMessage_allowDismiss and member.siteMessage_dismissed) and !(settings.siteMessage_allowDismiss and isset( cookie.siteMessage_dismissed ))}}
+  {{if settings.siteMessage_style == 1}}
+    {{$message_style = "info";}}
+  {{elseif settings.siteMessage_style == 2}}
+    {{$message_style = "success";}}
+  {{elseif settings.siteMessage_style == 3}}
+    {{$message_style = "warning";}}
+  {{elseif settings.siteMessage_style == 4}}
+    {{$message_style = "alert";}}
+  {{else}}
+    {{$message_style = "general";}}
+  {{endif}}
+    <div class="ipsMessage ipsSpacer_bottom siteMessage siteMessage_{$message_style} {{if settings.siteMessage_icon == '*'}}siteMessage_noIcon{{else}}{setting="siteMessage_icon"}{{endif}}" {{if settings.siteMessage_allowDismiss}}data-controller="plugins.siteMessageDismiss"{{endif}}>
+      {{if settings.siteMessage_allowDismiss}}
+		    <a href="{url="app=core&module=system&section=plugins&do=dismissSiteMessage" csrf="1"}" class="ipsType_blendlinks ipsPos_right" data-action="dismiss"><i class="fa fa-times"></i></a>
+      {{endif}}
+      <div>
+		      {setting="siteMessage_content"}
+      </div>
+	  </div>
+{{endif}}
