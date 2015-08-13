@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin name="Header Message" version_long="10010" version_human="1.0.10" author="Luke Rogers" website="http://dmptr.com/" update_check=""><hooks><hook type="C" class="\IPS\core\modules\front\system\plugins"><![CDATA[//<?php
+
+class hook17 extends _HOOK_CLASS_
+{
+  public function dismissSiteMessage()
+    {
+	try
+	{
+			\IPS\Session::i()->csrfCheck();
+	
+	    if ( !\IPS\Settings::i()->siteMessage_allowDismiss ) {
+	      return;
+	    }
+	
+			if ( \IPS\Member::loggedIn()->member_id )
+			{
+				\IPS\Member::loggedIn()->siteMessage_dismissed = TRUE;
+				\IPS\Member::loggedIn()->save();
+			}
+			else
+			{
+				\IPS\Request::i()->setCookie( 'siteMessage_dismissed', TRUE );
+			}
+	
+	    if ( \IPS\Request::i()->isAjax() )
+			{
+				\IPS\Output::i()->sendOutput( NULL, 200 );
+			}
+			else
+			{
+				\IPS\Output::i()->redirect( isset( $_SERVER['HTTP_REFERER'] ) ? $_SERVER['HTTP_REFERER'] : \IPS\Http\Url::internal( '' ) );
+			}
+	
+		}
+		catch ( \RuntimeException $e )
+		{
+			if ( method_exists( get_parent_class(), __FUNCTION__ ) )
+			{
+				return call_user_func_array( 'parent::' . __FUNCTION__, func_get_args() );
+			}
+			else
+			{
+				throw $e;
+			}
+		}
+	}
+}
+]]></hook><hook type="S" class="\IPS\Theme\class_core_front_global"><![CDATA[//<?php
+
+class hook19 extends _HOOK_CLASS_
+{
+
+/* !Hook Data - DO NOT REMOVE */
+public static function hookData() {
+ return array_merge_recursive( array (
+  'globalTemplate' =>
+  array (
+    0 =>
+    array (
+      'selector' => '#ipsLayout_mainArea',
+      'type' => 'add_inside_start',
+      'content' => '{template="siteMessage" group="plugins" location="global" app="core"}',
+    ),
+  ),
+), parent::hookData() );
+}
+/* End Hook Data */
+
+
+
+
+}
+]]></hook></hooks><settings><setting><key>siteMessage_content</key><default>Hello World!</default></setting><setting><key>siteMessage_style</key><default>0</default></setting><setting><key>siteMessage_allowDismiss</key><default>1</default></setting><setting><key>siteMessage_groups</key><default>*</default></setting><setting><key>siteMessage_icon</key><default>fa-warning</default></setting></settings><settingsCode><![CDATA[//<?php
+
+$form->add( new \IPS\Helpers\Form\Editor( 'siteMessage_content', \IPS\Settings::i()->siteMessage_content, FALSE, array( 'app' => 'core', 'key' => 'Admin', 'autoSaveKey' => 'siteMessage_content' ) ) );
+
+$form->add( new \IPS\Helpers\Form\Select( 'siteMessage_style', \IPS\Settings::i()->siteMessage_style, FALSE, array( 'app' => 'core', 'key' => 'Admin', 'autoSaveKey' => 'siteMessage_style', 'multiple' => FALSE, 'options' => array( 0 => 'Plain', 1 => 'Grey', 2 => 'Green', 3 => 'Orange', 4 => 'Red' ) ) ) );
+
+$form->add( new \IPS\Helpers\Form\Text( 'siteMessage_icon', \IPS\Settings::i()->siteMessage_icon, FALSE, array( 'app' => 'core', 'key' => 'Admin', 'autoSaveKey' => 'siteMessage_icon' ) ) );
+
+$form->add( new \IPS\Helpers\Form\Select(
+	'siteMessage_groups',
+	\IPS\Settings::i()->siteMessage_groups == '*' ? '*' : explode( ',', \IPS\Settings::i()->siteMessage_groups ),
+	FALSE,
+	array( 	'options' => array_combine( array_keys( \IPS\Member\Group::groups() ), array_map( function( $_group ) { return (string) $_group; }, \IPS\Member\Group::groups() ) ),
+			'multiple' => true,
+			'unlimited' => '*',
+			'unlimitedLang' => 'all_groups'
+	)
+));
+
+$form->add( new \IPS\Helpers\Form\YesNo( 'siteMessage_allowDismiss', \IPS\Settings::i()->siteMessage_allowDismiss ) );
+
+if ( $values = $form->values() )
+{
+	$form->saveAsSettings();
+	\IPS\Db::i()->update( 'core_members', array( 'siteMessage_dismissed' => 0 ) );
+	return TRUE;
+}
+
+return $form;
+]]></settingsCode><tasks/><widgets/><htmlFiles><html filename="siteMessage.phtml">PGlwczp0ZW1wbGF0ZSBwYXJhbWV0ZXJzPSIiIC8+DQoNCnt7aWYgc2V0dGluZ3Muc2l0ZU1lc3NhZ2VfY29udGVudCBhbmQgKHNldHRpbmdzLnNpdGVNZXNzYWdlX2dyb3VwcyA9PSAnKicgb3IgbWVtYmVyLmluR3JvdXAoZXhwbG9kZSgnLCcsIHNldHRpbmdzLnNpdGVNZXNzYWdlX2dyb3VwcykpKSBhbmQgIShzZXR0aW5ncy5zaXRlTWVzc2FnZV9hbGxvd0Rpc21pc3MgYW5kIG1lbWJlci5zaXRlTWVzc2FnZV9kaXNtaXNzZWQpIGFuZCAhKHNldHRpbmdzLnNpdGVNZXNzYWdlX2FsbG93RGlzbWlzcyBhbmQgaXNzZXQoIGNvb2tpZS5zaXRlTWVzc2FnZV9kaXNtaXNzZWQgKSl9fQ0KICB7e2lmIHNldHRpbmdzLnNpdGVNZXNzYWdlX3N0eWxlID09IDF9fQ0KICAgIHt7JG1lc3NhZ2Vfc3R5bGUgPSAiaW5mbyI7fX0NCiAge3tlbHNlaWYgc2V0dGluZ3Muc2l0ZU1lc3NhZ2Vfc3R5bGUgPT0gMn19DQogICAge3skbWVzc2FnZV9zdHlsZSA9ICJzdWNjZXNzIjt9fQ0KICB7e2Vsc2VpZiBzZXR0aW5ncy5zaXRlTWVzc2FnZV9zdHlsZSA9PSAzfX0NCiAgICB7eyRtZXNzYWdlX3N0eWxlID0gIndhcm5pbmciO319DQogIHt7ZWxzZWlmIHNldHRpbmdzLnNpdGVNZXNzYWdlX3N0eWxlID09IDR9fQ0KICAgIHt7JG1lc3NhZ2Vfc3R5bGUgPSAiYWxlcnQiO319DQogIHt7ZWxzZX19DQogICAge3skbWVzc2FnZV9zdHlsZSA9ICJnZW5lcmFsIjt9fQ0KICB7e2VuZGlmfX0NCiAgICA8ZGl2IGNsYXNzPSJpcHNNZXNzYWdlIGlwc1NwYWNlcl9ib3R0b20gc2l0ZU1lc3NhZ2Ugc2l0ZU1lc3NhZ2VfeyRtZXNzYWdlX3N0eWxlfSB7e2lmIHNldHRpbmdzLnNpdGVNZXNzYWdlX2ljb24gPT0gJyonfX1zaXRlTWVzc2FnZV9ub0ljb257e2Vsc2V9fXtzZXR0aW5nPSJzaXRlTWVzc2FnZV9pY29uIn17e2VuZGlmfX0iIHt7aWYgc2V0dGluZ3Muc2l0ZU1lc3NhZ2VfYWxsb3dEaXNtaXNzfX1kYXRhLWNvbnRyb2xsZXI9InBsdWdpbnMuc2l0ZU1lc3NhZ2VEaXNtaXNzInt7ZW5kaWZ9fT4NCiAgICAgIHt7aWYgc2V0dGluZ3Muc2l0ZU1lc3NhZ2VfYWxsb3dEaXNtaXNzfX0NCgkJICAgIDxhIGhyZWY9Int1cmw9ImFwcD1jb3JlJm1vZHVsZT1zeXN0ZW0mc2VjdGlvbj1wbHVnaW5zJmRvPWRpc21pc3NTaXRlTWVzc2FnZSIgY3NyZj0iMSJ9IiBjbGFzcz0iaXBzVHlwZV9ibGVuZGxpbmtzIGlwc1Bvc19yaWdodCIgZGF0YS1hY3Rpb249ImRpc21pc3MiPjxpIGNsYXNzPSJmYSBmYS10aW1lcyI+PC9pPjwvYT4NCiAgICAgIHt7ZW5kaWZ9fQ0KICAgICAgPGRpdj4NCgkJICAgICAge3NldHRpbmc9InNpdGVNZXNzYWdlX2NvbnRlbnQifQ0KICAgICAgPC9kaXY+DQoJICA8L2Rpdj4NCnt7ZW5kaWZ9fQ0K</html></htmlFiles><cssFiles><css filename="siteMessage.css">LnNpdGVNZXNzYWdlIHsKfQoKICAuc2l0ZU1lc3NhZ2UgcDpmaXJzdC1jaGlsZCwgLnNpdGVNZXNzYWdlIHA6Zmlyc3Qtb2YtdHlwZSB7CiAgICBtYXJnaW4tdG9wOiAwcHg7CiAgfQoKICAuc2l0ZU1lc3NhZ2UgcDpsYXN0LWNoaWxkLCAuc2l0ZU1lc3NhZ2UgcDpsYXN0LW9mLXR5cGUgewogICAgbWFyZ2luLWJvdHRvbTogMHB4OwogIH0KCiAgLnNpdGVNZXNzYWdlX25vSWNvbiB7CiAgICBwYWRkaW5nOiAxNXB4IDE1cHggMTVweCAxNXB4OwogIH0KCi8qID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09ICovCi8qIEFMRVJUICovCi5zaXRlTWVzc2FnZV9hbGVydCB7CgliYWNrZ3JvdW5kOiAjYjUyYjM4Owp9CgovKiA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PSAqLwovKiBTVUNDRVNTICovCi5zaXRlTWVzc2FnZV9zdWNjZXNzIHsKCWJhY2tncm91bmQ6ICNkYmUyYzk7Cgljb2xvcjogIzU1NmI0NTsKfQoKCS5zaXRlTWVzc2FnZV9zdWNjZXNzLnNpdGVNZXNzYWdlIGE6bm90KC5pcHNCdXR0b24pIHsKCQljb2xvcjogIzU1NmI0NTsKCQlib3JkZXItYm90dG9tOiAxcHggZG90dGVkICM1NTZiNDU7Cgl9CgovKiA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PSAqLwovKiBXQVJOSU5HICovCi5zaXRlTWVzc2FnZV93YXJuaW5nIHsKCWJhY2tncm91bmQ6ICNlZGU2ZTA7Cgljb2xvcjogIzU2NGEzZjsKfQoKCS5zaXRlTWVzc2FnZV93YXJuaW5nLnNpdGVNZXNzYWdlIGE6bm90KC5pcHNCdXR0b24pIHsKCQljb2xvcjogIzU2NGEzZjsKCQlib3JkZXItYm90dG9tOiAxcHggZG90dGVkICM1NjRhM2Y7Cgl9CgovKiA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PSAqLwovKiBJTkZPICovCi5zaXRlTWVzc2FnZV9pbmZvLCAuc2l0ZU1lc3NhZ2VfaW5mb3JtYXRpb24gewoJYmFja2dyb3VuZDogIzVlNzA3ZDsKfQoKCi8qID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09ICovCi8qIE9USEVSICovCi5zaXRlTWVzc2FnZV9nZW5lcmFsIHsKCWJhY2tncm91bmQ6ICNlYmViZWI7Cgljb2xvcjogIzMzMzsKfQoKCS5zaXRlTWVzc2FnZV9nZW5lcmFsLnNpdGVNZXNzYWdlIGE6bm90KC5pcHNCdXR0b24pIHsKCQljb2xvcjogIzMzMzsKCQlib3JkZXItYm90dG9tOiAxcHggZG90dGVkICMzMzM7Cgl9Cg==</css></cssFiles><jsFiles><js filename="siteMessageDismiss.js">OyggZnVuY3Rpb24oJCwgXywgdW5kZWZpbmVkKXsNCgkidXNlIHN0cmljdCI7DQoNCglpcHMuY29udHJvbGxlci5yZWdpc3RlcigncGx1Z2lucy5zaXRlTWVzc2FnZURpc21pc3MnLCB7DQoNCgkJaW5pdGlhbGl6ZTogZnVuY3Rpb24gKCkgew0KCQkJdGhpcy5vbiggZG9jdW1lbnQsICdjbGljaycsICdbZGF0YS1hY3Rpb249ImRpc21pc3MiXScsIHRoaXMuZGlzbWlzcyApOw0KCQl9LA0KDQoJCWRpc21pc3M6IGZ1bmN0aW9uIChlKSB7DQoJCQllLnByZXZlbnREZWZhdWx0KCk7DQoJCQl2YXIgdXJsID0gJCggZS5jdXJyZW50VGFyZ2V0ICkuYXR0cignaHJlZicpOw0KCQkJdmFyIG1lc3NhZ2UgPSAkKHRoaXMuc2NvcGUpOw0KDQoJCQlpcHMuZ2V0QWpheCgpKHVybCkuZG9uZShmdW5jdGlvbigpew0KCQkJCWlwcy51dGlscy5hbmltLmdvKCAnZmFkZU91dCcsIG1lc3NhZ2UgKTsNCgkJCX0pLmZhaWwoZnVuY3Rpb24oKXsNCgkJCQl3aW5kb3cubG9jYXRpb24gPSB1cmw7DQoJCQl9KTsNCgkJfQ0KDQoJfSk7DQp9KGpRdWVyeSwgXykpOw0K</js></jsFiles><resourcesFiles/><lang><word key="siteMessage_content" js="0">Message</word><word key="siteMessage_style" js="0">Style</word><word key="siteMessage_allowDismiss" js="0">Allow Hiding</word><word key="siteMessage_allowDismiss_desc" js="0">Allow users to click a button to hide the message box.</word><word key="siteMessage_groups" js="0">Show For</word><word key="siteMessage_groups_desc" js="0">Only users in these groups will see the message box.</word><word key="siteMessage_icon" js="0">Icon</word><word key="siteMessage_icon_desc" js="0"><![CDATA[What icon to use in the message box. Pick an icon from <a href="https://fortawesome.github.io/Font-Awesome/icons/">this page</a>, and enter into this box as <strong>fa-myicon</strong>. Use <strong>*</strong> for no icon.]]></word></lang><versions><version long="10000" human="1.0.0"><![CDATA[//<?php
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * Install Code
+ */
+class ips_plugins_setup_install
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		\IPS\Db::i()->addColumn( 'core_members', array(
+			'name'		=> 'siteMessage_dismissed',
+			'type'		=> 'BIT',
+			'length'	=> 1,
+			'null'		=> FALSE,
+			'default'	=> 0,
+			'comment'	=> 'If 1, the user has dismissed the global message'
+		) );
+
+		return TRUE;
+	}
+
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}
+]]></version><version long="10001" human="1.0.1"><![CDATA[//<?php
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.1 Upgrade Code
+ */
+class ips_plugins_setup_upg_10001
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10002" human="1.0.2"><![CDATA[//<?php
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.2 Upgrade Code
+ */
+class ips_plugins_setup_upg_10002
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10003" human="1.0.3"><![CDATA[//<?php
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.3 Upgrade Code
+ */
+class ips_plugins_setup_upg_10003
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10004" human="1.0.4"><![CDATA[//<?php
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.4 Upgrade Code
+ */
+class ips_plugins_setup_upg_10004
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10005" human="1.0.5"><![CDATA[//<?php
+
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.5 Upgrade Code
+ */
+class ips_plugins_setup_upg_10005
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10006" human="1.0.6"><![CDATA[//<?php
+
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.6 Upgrade Code
+ */
+class ips_plugins_setup_upg_10006
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10007" human="1.0.7"><![CDATA[//<?php
+
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.7 Upgrade Code
+ */
+class ips_plugins_setup_upg_10007
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10008" human="1.0.8"><![CDATA[//<?php
+
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.8 Upgrade Code
+ */
+class ips_plugins_setup_upg_10008
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10009" human="1.0.9"><![CDATA[//<?php
+
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.9 Upgrade Code
+ */
+class ips_plugins_setup_upg_10009
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version><version long="10010" human="1.0.10"><![CDATA[//<?php
+
+
+/* To prevent PHP errors (extending class does not exist) revealing path */
+if ( !defined( '\IPS\SUITE_UNIQUE_KEY' ) )
+{
+	header( ( isset( $_SERVER['SERVER_PROTOCOL'] ) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0' ) . ' 403 Forbidden' );
+	exit;
+}
+
+/**
+ * 1.0.10 Upgrade Code
+ */
+class ips_plugins_setup_upg_10010
+{
+	/**
+	 * ...
+	 *
+	 * @return	array	If returns TRUE, upgrader will proceed to next step. If it returns any other value, it will set this as the value of the 'extra' GET parameter and rerun this step (useful for loops)
+	 */
+	public function step1()
+	{
+		
+
+		return TRUE;
+	}
+	
+	// You can create as many additional methods (step2, step3, etc.) as is necessary.
+	// Each step will be executed in a new HTTP request
+}]]></version></versions></plugin>
